@@ -61,6 +61,7 @@ class ChangeVoiceSkill(MycroftSkill):
         voice_norm = VOICE_NORM.get(voice, voice)
 
         LOG.info("Changing voice to %s", voice_norm)
+        self.speak("Changing voice")
         self.bus.emit(Message("mycroft.tts.change-voice", data={"voice": voice_norm}))
 
     def handle_voice_changed(self, message):
