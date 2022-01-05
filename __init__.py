@@ -67,7 +67,7 @@ class ChangeVoiceSkill(MycroftSkill):
     def handle_voice_changed(self, message):
         self.speak(f"Voice has now been changed to {self._last_voice}")
 
-    def stop(self):
+    def shutdown(self):
         self.bus.remove("mycroft.tts.voice-changed", self.handle_voice_changed)
 
 
