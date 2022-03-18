@@ -29,14 +29,10 @@ VOICE_NORM = {
     "american male": "kusal",
 }
 
-VOICE_SELECTION = ["british male", "american male", "american female"]
-
 
 class ChangeVoiceSkill(MycroftSkill):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self._last_voice = ""
 
     def initialize(self):
         lingua_franca.load_language("en")
@@ -48,33 +44,39 @@ class ChangeVoiceSkill(MycroftSkill):
             voice = message.data.get("voice")
 
             if not voice:
-                voice = self.ask_selection(VOICE_SELECTION,)
+                self.speak("Please specify a voice", wait=True)
+                return
+
+            voice_norm = VOICE_NORM.get(voice, voice)
+            speaker: typing.Optional[int] = None
+
+            if voice_norm.startswith("speaker "):
+                speaker_str = voice_norm.split(maxsplit=1)[1]
+                speaker = int(extract_number(speaker_str))
+                if speaker > 108:
+                    voice_norm = "cmu"
+                    speaker = min(17, speaker - 109)
+                else:
+                    voice_norm = "vctk"
+
+                speaker = max(speaker, 0)
+            elif voice_norm not in VOICE_NORM.values():
+                voice_norm = ""
+
+            if not voice_norm:
+                self.speak("I don't recognize that voice", wait=True)
+                return
 
             self.gui.show_page("ChangingVoice.qml")
-            self._change_voice(voice)
-            self.gui.release()
+            try:
+                self._change_voice(voice, voice_norm, speaker=speaker)
+            finally:
+                self.gui.release()
 
-    def _change_voice(self, voice: str):
-        if not voice:
-            self.speak("I don't recognize that voice")
-            return
-
-        self._last_voice = voice
-        voice_norm = VOICE_NORM.get(voice, voice)
-        speaker: typing.Optional[int] = None
-
-        if voice_norm.startswith("speaker "):
-            speaker_str = voice_norm.split(maxsplit=1)[1]
-            speaker = int(extract_number(speaker_str))
-            if speaker > 108:
-                voice_norm = "cmu"
-                speaker = min(17, speaker - 109)
-            else:
-                voice_norm = "vctk"
-
-            speaker = max(speaker, 0)
-
-        LOG.info("Changing voice to %s", voice_norm)
+    def _change_voice(
+        self, voice_name: str, voice_norm: str, speaker: typing.Optional[int] = None
+    ):
+        LOG.info("Changing voice to %s (speaker=%s)", voice_norm, speaker)
         self.bus.wait_for_response(
             Message(
                 "mycroft.tts.change-voice",
@@ -83,7 +85,7 @@ class ChangeVoiceSkill(MycroftSkill):
             "mycroft.tts.change-voice.reply",
             timeout=120,
         )
-        self.speak(f"Voice has now been changed to {self._last_voice}", wait=True)
+        self.speak(f"Voice has now been changed to {voice_name}", wait=True)
 
 
 def create_skill():
