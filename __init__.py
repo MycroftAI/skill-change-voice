@@ -25,7 +25,6 @@ VOICE_NORM = {
     "pope": "apope",
     "alan pope": "apope",
     "british male": "apope",
-    "british female": "cori_samuel",
     "american female": "amy",
     "american male": "kusal",
 }
